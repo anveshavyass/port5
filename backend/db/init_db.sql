@@ -8,8 +8,6 @@ CREATE TABLE IF NOT EXISTS reviews (
     sentiment TEXT NOT NULL,
     urgency TEXT NOT NULL,
     category TEXT NOT NULL,
-    is_relevant BOOLEAN NOT NULL DEFAULT TRUE,
-    irrelevance_reason TEXT,
     key_phrase TEXT,
     source TEXT NOT NULL DEFAULT 'seeded',
     embedding vector(1536),

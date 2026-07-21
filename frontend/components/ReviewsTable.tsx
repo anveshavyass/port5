@@ -38,14 +38,7 @@ export function ReviewsTable({ reviews }: { reviews: Review[] }) {
                 <td className="whitespace-nowrap px-2 py-2 text-muted-foreground">
                   {r.review_date ?? "—"}
                 </td>
-                <td className="max-w-sm px-2 py-2">
-                  {r.review_text}
-                  {!r.is_relevant && (
-                    <span className="ml-2 rounded bg-zinc-100 px-1.5 py-0.5 text-xs text-zinc-500">
-                      quarantined: {r.irrelevance_reason}
-                    </span>
-                  )}
-                </td>
+                <td className="max-w-sm px-2 py-2">{r.review_text}</td>
                 <td className="whitespace-nowrap px-2 py-2">{r.category}</td>
                 <td className="px-2 py-2">
                   <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${SENTIMENT_BADGE[r.sentiment] ?? ""}`}>

@@ -43,8 +43,6 @@ def run(input_path: str) -> None:
                 "sentiment": classification.sentiment.value,
                 "urgency": classification.urgency.value,
                 "category": classification.category.value,
-                "is_relevant": classification.is_relevant,
-                "irrelevance_reason": classification.irrelevance_reason.value if classification.irrelevance_reason else None,
                 "key_phrase": classification.key_phrase,
                 "source": "seeded",
                 "embedding": embedding,

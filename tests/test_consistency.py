@@ -31,4 +31,3 @@ def test_classification_is_consistent_on_rerun(review_text):
     assert first.category == second.category
     assert first.sentiment == second.sentiment
     assert first.urgency == second.urgency
-    assert first.is_relevant == second.is_relevant

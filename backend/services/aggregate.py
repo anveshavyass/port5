@@ -11,11 +11,10 @@ def build_aggregates(week: str | None = None) -> dict:
     regardless -- it's the trend chart and the source of the week picker's
     options, so it must never shrink to a single week itself."""
     reviews = queries.get_all_reviews(week=week)
-    relevant = [r for r in reviews if r["is_relevant"]]
 
     total = len(reviews)
-    ratings = [r["rating"] for r in relevant if r["rating"] is not None]
-    negative = [r for r in relevant if r["sentiment"] == "negative"]
+    ratings = [r["rating"] for r in reviews if r["rating"] is not None]
+    negative = [r for r in reviews if r["sentiment"] == "negative"]
 
     category_counts = queries.get_category_counts(week=week)
     top_category = category_counts[0]["category"] if category_counts else None
@@ -23,9 +22,8 @@ def build_aggregates(week: str | None = None) -> dict:
     return {
         "week": week,
         "total_reviews": total,
-        "relevant_reviews": len(relevant),
         "avg_rating": round(sum(ratings) / len(ratings)) if ratings else None,
-        "pct_negative": round(100 * len(negative) / len(relevant), 1) if relevant else 0.0,
+        "pct_negative": round(100 * len(negative) / total, 1) if total else 0.0,
         "top_category": top_category,
         "category_counts": category_counts,
         "sentiment_counts": queries.get_sentiment_counts(week=week),

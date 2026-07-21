@@ -41,7 +41,6 @@ export type ThemeCount = { key_phrase: string; count: number };
 export type Aggregates = {
   week: string | null;
   total_reviews: number;
-  relevant_reviews: number;
   avg_rating: number | null;
   pct_negative: number;
   top_category: string | null;
@@ -74,8 +73,6 @@ export type Review = {
   sentiment: string;
   urgency: string;
   category: string;
-  is_relevant: boolean;
-  irrelevance_reason: string | null;
   key_phrase: string | null;
   source: string;
   created_at: string;
@@ -88,6 +85,7 @@ export function getReviews() {
 export type ChatResponse = {
   answer: string;
   query_type: string;
+  matched_count: number;
   matched_reviews: Partial<Review>[];
 };
 

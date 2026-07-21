@@ -65,10 +65,14 @@ def _route_query(question: str) -> RoutedQuery:
 
 
 ANSWER_SYSTEM_PROMPT = """You answer a CX team member's question about
-customer feedback using ONLY the reviews provided below. Never invent a
-review or a detail not present in the given rows. If no rows are given,
-say so plainly instead of guessing. Keep the answer to a few sentences,
-citing specific reviews where useful."""
+customer feedback using ONLY the reviews provided below. The rows given are
+the complete set matching the question's filters (not a sample). You are
+also told the exact matching count as a fact -- if asked for a count or
+total, state that exact number verbatim. Never recount the list yourself;
+LLMs are unreliable at counting long lists and the provided number is always
+correct. Never invent a review or a detail not present in the given rows.
+If no rows are given, say so plainly instead of guessing. Keep the answer to
+a few sentences, citing specific reviews where useful."""
 
 
 def answer_query(question: str) -> dict:
@@ -83,7 +87,7 @@ def answer_query(question: str) -> dict:
             category=routed.filters.category,
             sentiment=routed.filters.sentiment,
             urgency=routed.filters.urgency,
-            limit=50,
+            limit=1000,
         )
     else:
         embedding = embed_text(question)
@@ -93,6 +97,7 @@ def answer_query(question: str) -> dict:
         return {
             "answer": "No reviews match that query.",
             "query_type": routed.query_type.value,
+            "matched_count": 0,
             "matched_reviews": [],
         }
 
@@ -105,12 +110,20 @@ def answer_query(question: str) -> dict:
         model=SUMMARY_MODEL,
         messages=[
             {"role": "system", "content": ANSWER_SYSTEM_PROMPT},
-            {"role": "user", "content": f"Question: {question}\n\nMatching reviews:\n{context}"},
+            {
+                "role": "user",
+                "content": (
+                    f"Question: {question}\n\n"
+                    f"Exact matching count: {len(rows)}\n\n"
+                    f"Matching reviews:\n{context}"
+                ),
+            },
         ],
     )
 
     return {
         "answer": completion.choices[0].message.content,
         "query_type": routed.query_type.value,
+        "matched_count": len(rows),
         "matched_reviews": rows,
     }

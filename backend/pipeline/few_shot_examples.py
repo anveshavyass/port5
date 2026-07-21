@@ -9,14 +9,15 @@ example would not, rather than just showing "one example per category":
    biryani" is Food Quality even though the user is also annoyed at the app.
 3. Payments & Refunds, negative, high urgency -- teaches the "dominant harm"
    rule: money stuck is scored more urgent than a late delivery, and abusive
-   tone in the review text must not flip is_relevant to False.
+   tone in the review text must not soften the classification.
 4. App & Ordering, negative, low urgency -- teaches that UI bugs are a
    distinct category from customer support complaints about *people*.
 5. General Praise, positive, low urgency -- teaches the "no actionable
    complaint" signal so praise isn't force-fit into a complaint category.
-6. Irrelevant, gibberish -- teaches the relevance gate: a two-word or
-   emoji-only review should be tagged and quarantined, not classified
-   into a real category just to fill one in.
+6. General Praise, neutral, low urgency -- teaches that even a low-content,
+   near-gibberish review still gets a best-effort real classification, and
+   that key_phrase falls back to the review text itself rather than being
+   left blank when there's no distinct phrase to extract.
 """
 
 FEW_SHOT_EXAMPLES = [
@@ -27,8 +28,6 @@ FEW_SHOT_EXAMPLES = [
             "sentiment": "negative",
             "urgency": "high",
             "category": "Delivery Experience",
-            "is_relevant": True,
-            "irrelevance_reason": None,
             "key_phrase": "1 hour delivery delay",
         },
     },
@@ -39,8 +38,6 @@ FEW_SHOT_EXAMPLES = [
             "sentiment": "negative",
             "urgency": "medium",
             "category": "Food Quality",
-            "is_relevant": True,
-            "irrelevance_reason": None,
             "key_phrase": "semi-cooked food",
         },
     },
@@ -51,8 +48,6 @@ FEW_SHOT_EXAMPLES = [
             "sentiment": "negative",
             "urgency": "high",
             "category": "Payments & Refunds",
-            "is_relevant": True,
-            "irrelevance_reason": None,
             "key_phrase": "refund stuck 12 days",
         },
     },
@@ -63,8 +58,6 @@ FEW_SHOT_EXAMPLES = [
             "sentiment": "negative",
             "urgency": "low",
             "category": "App & Ordering",
-            "is_relevant": True,
-            "irrelevance_reason": None,
             "key_phrase": "buggy app UI",
         },
     },
@@ -74,8 +67,6 @@ FEW_SHOT_EXAMPLES = [
             "sentiment": "positive",
             "urgency": "low",
             "category": "General Praise",
-            "is_relevant": True,
-            "irrelevance_reason": None,
             "key_phrase": "positive experience overall",
         },
     },
@@ -85,9 +76,7 @@ FEW_SHOT_EXAMPLES = [
             "sentiment": "neutral",
             "urgency": "low",
             "category": "General Praise",
-            "is_relevant": False,
-            "irrelevance_reason": "gibberish",
-            "key_phrase": None,
+            "key_phrase": "asdf ok nice 👍",
         },
     },
 ]

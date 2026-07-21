@@ -39,20 +39,11 @@ class Category(str, Enum):
     general_praise = "General Praise"
 
 
-class IrrelevanceReason(str, Enum):
-    spam = "spam"
-    gibberish = "gibberish"
-    one_word = "one_word"
-    promo_content = "promo_content"
-
-
 class Classification(BaseModel):
     sentiment: Sentiment
     urgency: Urgency
     category: Category
-    is_relevant: bool
-    irrelevance_reason: IrrelevanceReason | None
-    key_phrase: str | None
+    key_phrase: str
 
 
 SYSTEM_PROMPT = """You are a customer feedback classifier for EatSure, a food
@@ -60,16 +51,19 @@ delivery app. Classify each review into structured fields. Follow these rules:
 
 - Judge sentiment and category from the review TEXT ONLY. Never assume a star
   rating -- you are not given one, and should not need one.
-- Abusive or angry TONE does not make a review irrelevant. An angry customer
-  describing a real problem is still relevant; classify the problem itself.
+- Abusive or angry TONE does not change the underlying category. An angry
+  customer describing a real problem should still be classified by that
+  problem, not by their tone.
 - If a review mentions multiple issues, pick the category for the DOMINANT
   harm: money stuck (Payments & Refunds) outweighs a late delivery; a food
   safety issue (Food Quality) outweighs a UI complaint.
-- Mark is_relevant=False ONLY for spam, gibberish, a single unrelated word, or
-  promotional content -- never just because the review is short and negative.
+- Every review gets a real category, sentiment, and urgency -- even spam,
+  gibberish, or a single unrelated word. Make a best-effort call rather than
+  refusing to classify.
 - key_phrase is a short (3-6 word) extractive summary of the core complaint or
-  praise, in the reviewer's own words where possible. Leave it null when
-  is_relevant is False.
+  praise, in the reviewer's own words where possible. It must never be empty
+  -- if the review has no distinct phrase to extract (emoji-only, a single
+  generic word), use the review text itself as key_phrase instead.
 - urgency reflects how quickly a human should act: high = money/safety/app-
   breaking, medium = a real but non-urgent complaint, low = cosmetic or praise.
 """
@@ -99,4 +93,7 @@ def classify_review(review_text: str) -> Classification:
         ],
         response_format=Classification,
     )
-    return completion.choices[0].message.parsed
+    result = completion.choices[0].message.parsed
+    if not result.key_phrase.strip():
+        result.key_phrase = review_text.strip()
+    return result

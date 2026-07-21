@@ -3,9 +3,9 @@ from db.connection import get_cursor
 INSERT_REVIEW = """
     INSERT INTO reviews (
         review_date, rating, review_text, sentiment, urgency, category,
-        is_relevant, irrelevance_reason, key_phrase, source, embedding
+        key_phrase, source, embedding
     )
-    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
     RETURNING id
 """
 
@@ -21,8 +21,6 @@ def insert_review(row: dict) -> int:
                 row["sentiment"],
                 row["urgency"],
                 row["category"],
-                row["is_relevant"],
-                row.get("irrelevance_reason"),
                 row.get("key_phrase"),
                 row.get("source", "seeded"),
                 row.get("embedding"),
@@ -38,8 +36,7 @@ def get_all_reviews(limit: int = 1000, week: str | None = None) -> list[dict]:
         cur.execute(
             f"""
             SELECT id, review_date, rating, review_text, sentiment, urgency,
-                   category, is_relevant, irrelevance_reason, key_phrase,
-                   source, created_at
+                   category, key_phrase, source, created_at
             FROM reviews
             WHERE TRUE {clause}
             ORDER BY review_date NULLS LAST, id
@@ -58,7 +55,7 @@ def get_category_counts(week: str | None = None) -> list[dict]:
             f"""
             SELECT category, COUNT(*) AS count
             FROM reviews
-            WHERE is_relevant = TRUE {clause}
+            WHERE TRUE {clause}
             GROUP BY category
             ORDER BY count DESC
             """,
@@ -75,7 +72,7 @@ def get_sentiment_counts(week: str | None = None) -> list[dict]:
             f"""
             SELECT sentiment, COUNT(*) AS count
             FROM reviews
-            WHERE is_relevant = TRUE {clause}
+            WHERE TRUE {clause}
             GROUP BY sentiment
             ORDER BY count DESC
             """,
@@ -92,7 +89,7 @@ def get_urgency_counts(week: str | None = None) -> list[dict]:
             f"""
             SELECT urgency, COUNT(*) AS count
             FROM reviews
-            WHERE is_relevant = TRUE {clause}
+            WHERE TRUE {clause}
             GROUP BY urgency
             ORDER BY count DESC
             """,
@@ -126,7 +123,7 @@ def get_rating_sentiment_agreement(week: str | None = None) -> list[dict]:
             f"""
             SELECT rating, sentiment, COUNT(*) AS count
             FROM reviews
-            WHERE is_relevant = TRUE AND rating IS NOT NULL {clause}
+            WHERE rating IS NOT NULL {clause}
             GROUP BY rating, sentiment
             ORDER BY rating, sentiment
             """,
@@ -143,7 +140,7 @@ def get_top_key_phrases(limit: int = 10, week: str | None = None) -> list[dict]:
             f"""
             SELECT key_phrase, COUNT(*) AS count
             FROM reviews
-            WHERE is_relevant = TRUE AND key_phrase IS NOT NULL AND key_phrase != '' {clause}
+            WHERE key_phrase IS NOT NULL AND key_phrase != '' {clause}
             GROUP BY key_phrase
             ORDER BY count DESC, key_phrase
             LIMIT %s
@@ -161,7 +158,6 @@ def vector_search(embedding: list[float], limit: int = 8) -> list[dict]:
                    category, key_phrase,
                    embedding <=> %s::vector AS distance
             FROM reviews
-            WHERE is_relevant = TRUE
             ORDER BY embedding <=> %s::vector
             LIMIT %s
             """,
@@ -172,7 +168,7 @@ def vector_search(embedding: list[float], limit: int = 8) -> list[dict]:
 
 def filter_reviews(category: str | None = None, sentiment: str | None = None,
                     urgency: str | None = None, limit: int = 50) -> list[dict]:
-    clauses = ["is_relevant = TRUE"]
+    clauses = ["TRUE"]
     params: list = []
     if category:
         clauses.append("category = %s")

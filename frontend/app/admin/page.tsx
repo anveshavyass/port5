@@ -15,6 +15,7 @@ import {
 } from "@/components/Charts";
 import { ReviewsTable } from "@/components/ReviewsTable";
 import { ChatPanel } from "@/components/ChatPanel";
+import { BackToHome } from "@/components/BackToHome";
 
 function KpiCard({ label, value }: { label: string; value: string }) {
   return (
@@ -64,6 +65,9 @@ export default function AdminPage() {
   if (error) {
     return (
       <main className="mx-auto max-w-3xl px-4 py-16 text-center">
+        <div className="mb-6 text-left">
+          <BackToHome />
+        </div>
         <p className="text-red-600">{error}</p>
         <p className="mt-2 text-sm text-muted-foreground">
           Check that the FastAPI backend is running and reachable at the configured API base URL.
@@ -73,11 +77,19 @@ export default function AdminPage() {
   }
 
   if (!aggregates) {
-    return <main className="p-8 text-center text-muted-foreground">Loading dashboard...</main>;
+    return (
+      <main className="p-8 text-center text-muted-foreground">
+        <div className="mb-6 text-left">
+          <BackToHome />
+        </div>
+        Loading dashboard...
+      </main>
+    );
   }
 
   return (
     <main className="mx-auto max-w-6xl space-y-6 px-4 py-8">
+      <BackToHome />
       <h1 className="text-xl font-semibold">PulseAI — EatSure Feedback Intelligence (Admin)</h1>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">

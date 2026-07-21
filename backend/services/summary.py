@@ -41,9 +41,9 @@ def generate_weekly_summary(week: str | None = None) -> dict:
     aggregates = build_aggregates(week=week)
     period_label = f"the week starting {week}" if week else "the entire dataset (all time)"
 
-    if aggregates["relevant_reviews"] == 0:
+    if aggregates["total_reviews"] == 0:
         return {
-            "summary": f"No relevant reviews found for {period_label}.",
+            "summary": f"No reviews found for {period_label}.",
             "aggregates": aggregates,
         }
 
