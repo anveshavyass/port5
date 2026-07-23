@@ -57,6 +57,12 @@ delivery app. Classify each review into structured fields. Follow these rules:
 - If a review mentions multiple issues, pick the category for the DOMINANT
   harm: money stuck (Payments & Refunds) outweighs a late delivery; a food
   safety issue (Food Quality) outweighs a UI complaint.
+- General Praise is reserved for reviews with POSITIVE or NEUTRAL sentiment
+  and no actionable complaint. A review with negative sentiment must NEVER be
+  classified as General Praise, even if it is too short or vague to name a
+  specific domain (e.g. "Worst", "Very bad service, don't use this app"). A
+  vague negative review with no specific domain signal defaults to Customer
+  Support, since it is read as a general complaint about the service.
 - Every review gets a real category, sentiment, and urgency -- even spam,
   gibberish, or a single unrelated word. Make a best-effort call rather than
   refusing to classify.

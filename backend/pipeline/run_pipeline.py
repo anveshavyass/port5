@@ -1,4 +1,4 @@
-"""Batch orchestrator: CSV -> clean -> classify -> embed -> Postgres.
+"""Batch orchestrator: CSV -> clean -> classify -> embed -> Postgres + Milvus.
 
 Usage:
     python pipeline/run_pipeline.py --input ../data/eatsure_reviews_sample.csv
@@ -9,6 +9,7 @@ import time
 
 import pandas as pd
 
+from db import milvus_client
 from db.queries import insert_review
 from pipeline.classify import classify_review
 from pipeline.clean import load_and_clean
@@ -36,7 +37,7 @@ def run(input_path: str) -> None:
             classification = classify_review(review_text)
             embedding = embed_text(build_embedding_source(review_text, classification.key_phrase))
 
-            insert_review({
+            review_id = insert_review({
                 "review_date": row["Date"],
                 "rating": None if pd.isna(row["Rating"]) else int(row["Rating"]),
                 "review_text": review_text,
@@ -45,8 +46,8 @@ def run(input_path: str) -> None:
                 "category": classification.category.value,
                 "key_phrase": classification.key_phrase,
                 "source": "seeded",
-                "embedding": embedding,
             })
+            milvus_client.upsert_embedding(review_id, embedding)
             succeeded += 1
         except Exception as exc:
             failed += 1

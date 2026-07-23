@@ -3,6 +3,7 @@ uvicorn[standard]
 openai
 pydantic
 psycopg2-binary
+pymilvus
 pandas
 python-dotenv
 pytest

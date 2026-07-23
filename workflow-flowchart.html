@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PulseAI — Workflow &amp; Tech Stack</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --panel: #ffffff;
+    --border: #d7d7db;
+    --text: #1a1a1a;
+    --muted: #6b6b6b;
+    --accent: #1d4ed8;
+    --shadow: 0 1px 2px rgba(0,0,0,0.03), 0 4px 14px rgba(0,0,0,0.04);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+    line-height: 1.5;
+  }
+  .wrap {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 48px 24px 96px;
+  }
+  header.page {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+  header.page p.eyebrow {
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin: 0 0 8px;
+  }
+  header.page h1 {
+    margin: 0;
+    font-size: 2rem;
+    letter-spacing: -0.02em;
+    font-weight: 700;
+  }
+  header.page p.sub {
+    color: var(--muted);
+    margin: 10px auto 0;
+    max-width: 640px;
+    font-size: 0.95rem;
+  }
+
+  section.block {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    padding: 28px 28px 32px;
+    margin-bottom: 28px;
+  }
+  section.block h2 {
+    margin: 0 0 4px;
+    font-size: 1.15rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  section.block .stage-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px; height: 24px;
+    border-radius: 4px;
+    border: 1px solid var(--text);
+    color: var(--text);
+    font-size: 0.75rem;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  section.block p.desc {
+    color: var(--muted);
+    margin: 4px 0 24px;
+    font-size: 0.88rem;
+  }
+
+  /* ---- flow nodes ---- */
+  .flow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .node {
+    width: 100%;
+    max-width: 560px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px 16px;
+    background: #fff;
+    text-align: left;
+  }
+  .node .title {
+    font-weight: 700;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .node .sub {
+    color: var(--muted);
+    font-size: 0.8rem;
+    margin-top: 4px;
+  }
+  .node.full { max-width: none; width: 100%; }
+
+  .tag {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 1px 7px;
+    border-radius: 3px;
+    background: #f0f0f2;
+    color: var(--muted);
+    border: 1px solid var(--border);
+  }
+
+  .arrow {
+    width: 1px;
+    height: 22px;
+    background: var(--text);
+    position: relative;
+    margin: 2px 0;
+    flex-shrink: 0;
+  }
+  .arrow::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: -1px;
+    transform: translateX(-50%);
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 7px solid var(--text);
+  }
+  .arrow.tight { height: 14px; }
+
+  /* branch fork */
+  .fork-wrap {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .fork-svg { width: 60%; max-width: 460px; height: 30px; color: var(--text); }
+  .fork-svg.small { width: 80%; max-width: 220px; height: 24px; }
+  .merge-svg { width: 60%; max-width: 460px; height: 30px; color: var(--text); transform: scaleY(-1); }
+  .merge-svg.small { width: 80%; max-width: 220px; height: 24px; transform: scaleY(-1); }
+
+  .branches {
+    width: 100%;
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .branch-col {
+    flex: 1 1 220px;
+    max-width: 300px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+  }
+  .branch-col.major {
+    flex: 1 1 400px;
+    max-width: 480px;
+  }
+  .branch-col.minor {
+    flex: 1 1 150px;
+    max-width: 210px;
+  }
+  .branch-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    margin-bottom: 8px;
+    text-align: center;
+  }
+
+  .parallel-group {
+    width: 100%;
+    border-left: 2px solid var(--border);
+    padding-left: 12px;
+    margin: 6px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .parallel-group .node { padding: 8px 12px; }
+  .parallel-group .node .title { font-size: 0.82rem; }
+  .parallel-group .node .sub { font-size: 0.74rem; }
+  .parallel-note {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--muted);
+    margin-bottom: 2px;
+  }
+
+  code.inline {
+    background: #f0f0f2;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 0.85em;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    border: 1px solid var(--border);
+  }
+
+  /* ---- tech stack ---- */
+  .stack-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 16px;
+  }
+  .stack-card {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 16px;
+    background: #fff;
+  }
+  .stack-card h3 {
+    margin: 0 0 10px;
+    font-size: 0.88rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .stack-card ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .stack-card li {
+    padding: 6px 0;
+    border-top: 1px dashed var(--border);
+    font-size: 0.84rem;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .stack-card li:first-child { border-top: none; }
+  .stack-card li .name { font-weight: 600; }
+  .stack-card li .role { color: var(--muted); text-align: right; }
+
+  footer.note {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.78rem;
+    margin-top: 12px;
+  }
+
+  @media (max-width: 640px) {
+    .wrap { padding: 32px 14px 72px; }
+    section.block { padding: 20px 16px 26px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="page">
+    <p class="eyebrow">EatSure · Feedback Intelligence</p>
+    <h1>PulseAI — System Workflow</h1>
+    <p class="sub">One end-to-end diagram: raw review text in, dashboard insight and conversational Q&amp;A out.</p>
+  </header>
+
+  <!-- ONE CONSOLIDATED FLOWCHART -->
+  <section class="block">
+    <h2>End-to-End Workflow</h2>
+    <p class="desc">From CSV / live submission, through classification and storage, to the Admin dashboard and the RAG chatbot.</p>
+
+    <div class="flow">
+
+      <!-- entry fork: batch vs live -->
+      <div class="branches">
+        <div class="branch-col">
+          <div class="branch-label">Batch Ingestion — pipeline/run_pipeline.py</div>
+          <div class="node full">
+            <div class="title">Reviews CSV <span class="tag">input</span></div>
+            <div class="sub"><code class="inline">data/eatsure_reviews_sample.csv</code></div>
+          </div>
+          <div class="arrow"></div>
+          <div class="node full">
+            <div class="title">Clean &amp; dedupe <span class="tag">pandas</span></div>
+            <div class="sub"><code class="inline">pipeline/clean.py</code></div>
+          </div>
+        </div>
+        <div class="branch-col">
+          <div class="branch-label">Live Submission — POST /classify/single</div>
+          <div class="node full">
+            <div class="title">Customer submits review <span class="tag">User view</span></div>
+            <div class="sub"><code class="inline">frontend/app/user</code> → <code class="inline">ReviewForm</code></div>
+          </div>
+        </div>
+      </div>
+      <svg class="merge-svg" viewBox="0 0 300 30" preserveAspectRatio="none">
+        <path d="M150 0 V8 M40 8 H260 M40 8 V30 M260 8 V30" fill="none" stroke="currentColor" stroke-width="1.5"/>
+      </svg>
+
+      <div class="node">
+        <div class="title">Classify <span class="tag">GPT-4o-mini</span></div>
+        <div class="sub">Sentiment, urgency, category, key_phrase — always a real classification, never left blank — <code class="inline">pipeline/classify.py</code></div>
+      </div>
+      <div class="arrow"></div>
+      <div class="node">
+        <div class="title">Embed <span class="tag">text-embedding-3-small</span></div>
+        <div class="sub">Review text + key_phrase embedded together for semantic search — <code class="inline">pipeline/embed.py</code></div>
+      </div>
+      <div class="arrow"></div>
+      <div class="node">
+        <div class="title">Insert row <span class="tag">Postgres + pgvector</span></div>
+        <div class="sub"><code class="inline">reviews</code> table. If this came from the live path, category + a plain-English acknowledgement are returned to the customer immediately.</div>
+      </div>
+
+      <div class="arrow"></div>
+
+      <!-- second fork: dashboard vs chatbot -->
+      <div class="branches">
+
+        <div class="branch-col major">
+          <div class="branch-label">Admin Dashboard Load</div>
+          <div class="node full">
+            <div class="title">CX teammate opens dashboard <span class="tag">Admin view</span></div>
+          </div>
+          <div class="arrow tight"></div>
+          <div class="parallel-group">
+            <div class="parallel-note">Fetched in parallel</div>
+            <div class="node">
+              <div class="title">GET <code class="inline">/aggregate</code></div>
+              <div class="sub">SQL <code class="inline">COUNT</code>/<code class="inline">GROUP BY</code> only, no LLM → KPI cards + charts</div>
+            </div>
+            <div class="node">
+              <div class="title">GET <code class="inline">/summary</code></div>
+              <div class="sub">Same aggregates, narrated by <strong>GPT-4o</strong> — never recomputes numbers</div>
+            </div>
+            <div class="node">
+              <div class="title">GET <code class="inline">/reviews</code></div>
+              <div class="sub">All rows, newest-first → <code class="inline">ReviewsTable</code></div>
+            </div>
+          </div>
+          <div class="arrow tight"></div>
+          <div class="node full">
+            <div class="title">Rendered dashboard</div>
+            <div class="sub">KPIs, sentiment donut, category bar, urgency breakdown, weekly trend, rating↔sentiment agreement, top themes, reviews table, chat panel</div>
+          </div>
+        </div>
+
+        <div class="branch-col major">
+          <div class="branch-label">Conversational Q&amp;A — POST /chat</div>
+          <div class="node full">
+            <div class="title">CX teammate asks a question</div>
+            <div class="sub">e.g. "how many negative delivery reviews?"</div>
+          </div>
+          <div class="arrow tight"></div>
+          <div class="node full">
+            <div class="title">Router <span class="tag">GPT-4o-mini</span></div>
+            <div class="sub">Aggregation (exact filter/count) vs semantic (open meaning); extracts filters when explicit</div>
+          </div>
+
+          <div class="branches" style="margin-top:8px;">
+            <div class="branch-col minor">
+              <div class="branch-label">Aggregation</div>
+              <div class="node full">
+                <div class="title">SQL filter</div>
+                <div class="sub"><code class="inline">filter_reviews</code>, up to 1000 rows</div>
+              </div>
+            </div>
+            <div class="branch-col minor">
+              <div class="branch-label">Semantic</div>
+              <div class="node full">
+                <div class="title">pgvector search</div>
+                <div class="sub">Top 8 by cosine similarity</div>
+              </div>
+            </div>
+          </div>
+          <svg class="merge-svg small" viewBox="0 0 300 24" preserveAspectRatio="none">
+            <path d="M150 0 V6 M75 6 H225 M75 6 V24 M225 6 V24" fill="none" stroke="currentColor" stroke-width="1.5"/>
+          </svg>
+
+          <div class="node full">
+            <div class="title">Exact count computed in Python <span class="tag">len(rows)</span></div>
+            <div class="sub">Never left for the LLM to tally — a stated fact, not a guess</div>
+          </div>
+          <div class="arrow tight"></div>
+          <div class="node full">
+            <div class="title">Answer composer <span class="tag">GPT-4o</span></div>
+            <div class="sub">Grounded strictly in retrieved rows + exact count</div>
+          </div>
+          <div class="arrow tight"></div>
+          <div class="node full">
+            <div class="title">Answer + matched reviews returned <span class="tag">ChatPanel</span></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- TECH STACK -->
+  <section class="block">
+    <h2>Tech Stack</h2>
+    <p class="desc">Everything the workflow above actually runs on.</p>
+    <div class="stack-grid">
+      <div class="stack-card">
+        <h3>Frontend</h3>
+        <ul>
+          <li><span class="name">Next.js 14</span><span class="role">App Router</span></li>
+          <li><span class="name">React 18</span><span class="role">UI</span></li>
+          <li><span class="name">TypeScript</span><span class="role">types</span></li>
+          <li><span class="name">Tailwind CSS</span><span class="role">styling</span></li>
+          <li><span class="name">Recharts</span><span class="role">charts</span></li>
+          <li><span class="name">clsx / tailwind-merge</span><span class="role">class utils</span></li>
+        </ul>
+      </div>
+      <div class="stack-card">
+        <h3>Backend</h3>
+        <ul>
+          <li><span class="name">FastAPI</span><span class="role">API framework</span></li>
+          <li><span class="name">Uvicorn</span><span class="role">ASGI server</span></li>
+          <li><span class="name">Pydantic</span><span class="role">schemas/validation</span></li>
+          <li><span class="name">python-dotenv</span><span class="role">config</span></li>
+          <li><span class="name">pandas</span><span class="role">CSV cleaning</span></li>
+        </ul>
+      </div>
+      <div class="stack-card">
+        <h3>Database</h3>
+        <ul>
+          <li><span class="name">PostgreSQL</span><span class="role">primary store</span></li>
+          <li><span class="name">pgvector</span><span class="role">embedding search</span></li>
+          <li><span class="name">psycopg2</span><span class="role">DB driver</span></li>
+        </ul>
+      </div>
+      <div class="stack-card">
+        <h3>AI / LLM</h3>
+        <ul>
+          <li><span class="name">GPT-4o-mini</span><span class="role">classify + route</span></li>
+          <li><span class="name">GPT-4o</span><span class="role">summary + chat answers</span></li>
+          <li><span class="name">text-embedding-3-small</span><span class="role">embeddings</span></li>
+          <li><span class="name">OpenAI SDK</span><span class="role">structured outputs</span></li>
+        </ul>
+      </div>
+      <div class="stack-card">
+        <h3>Testing</h3>
+        <ul>
+          <li><span class="name">pytest</span><span class="role">test runner</span></li>
+          <li><span class="name">FastAPI TestClient</span><span class="role">API tests</span></li>
+          <li><span class="name">httpx</span><span class="role">HTTP client</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <footer class="note">Generated from the current PulseAI codebase — backend/, frontend/, data/, tests/.</footer>
+</div>
+</body>
+</html>

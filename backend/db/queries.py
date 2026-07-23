@@ -1,11 +1,12 @@
+from db import milvus_client
 from db.connection import get_cursor
 
 INSERT_REVIEW = """
     INSERT INTO reviews (
         review_date, rating, review_text, sentiment, urgency, category,
-        key_phrase, source, embedding
+        key_phrase, source
     )
-    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
     RETURNING id
 """
 
@@ -23,7 +24,6 @@ def insert_review(row: dict) -> int:
                 row["category"],
                 row.get("key_phrase"),
                 row.get("source", "seeded"),
-                row.get("embedding"),
             ),
         )
         return cur.fetchone()["id"]
@@ -150,20 +150,32 @@ def get_top_key_phrases(limit: int = 10, week: str | None = None) -> list[dict]:
         return cur.fetchall()
 
 
-def vector_search(embedding: list[float], limit: int = 8) -> list[dict]:
+def get_reviews_by_ids(ids: list[int]) -> list[dict]:
+    if not ids:
+        return []
     with get_cursor() as cur:
         cur.execute(
             """
             SELECT id, review_date, rating, review_text, sentiment, urgency,
-                   category, key_phrase,
-                   embedding <=> %s::vector AS distance
+                   category, key_phrase
             FROM reviews
-            ORDER BY embedding <=> %s::vector
-            LIMIT %s
+            WHERE id = ANY(%s)
             """,
-            (embedding, embedding, limit),
+            (ids,),
         )
-        return cur.fetchall()
+        rows_by_id = {row["id"]: row for row in cur.fetchall()}
+    return [rows_by_id[i] for i in ids if i in rows_by_id]
+
+
+def vector_search(embedding: list[float], limit: int = 8) -> list[dict]:
+    """Nearest-neighbor search: rank ids by embedding similarity in Milvus,
+    then hydrate the full rows from Postgres in that same rank order."""
+    hits = milvus_client.search(embedding, limit=limit)
+    rows = get_reviews_by_ids([hit["id"] for hit in hits])
+    distance_by_id = {hit["id"]: hit["distance"] for hit in hits}
+    for row in rows:
+        row["distance"] = distance_by_id[row["id"]]
+    return rows
 
 
 def filter_reviews(category: str | None = None, sentiment: str | None = None,

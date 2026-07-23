@@ -18,6 +18,10 @@ example would not, rather than just showing "one example per category":
    near-gibberish review still gets a best-effort real classification, and
    that key_phrase falls back to the review text itself rather than being
    left blank when there's no distinct phrase to extract.
+7. Customer Support, negative, low urgency -- teaches that a vague negative
+   review with no specific domain signal ("Worst") is NOT General Praise --
+   negative sentiment is never praise, and a generic complaint defaults to
+   Customer Support rather than being force-fit elsewhere.
 """
 
 FEW_SHOT_EXAMPLES = [
@@ -77,6 +81,15 @@ FEW_SHOT_EXAMPLES = [
             "urgency": "low",
             "category": "General Praise",
             "key_phrase": "asdf ok nice 👍",
+        },
+    },
+    {
+        "review": "Worst",
+        "output": {
+            "sentiment": "negative",
+            "urgency": "low",
+            "category": "Customer Support",
+            "key_phrase": "Worst",
         },
     },
 ]

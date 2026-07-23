@@ -4,6 +4,7 @@ import pandas as pd
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
+from db import milvus_client
 from db.queries import insert_review
 from pipeline.classify import classify_review
 from pipeline.clean import load_and_clean
@@ -42,7 +43,7 @@ def classify_batch(payload: BatchClassifyRequest):
         try:
             classification = classify_review(row["Review"])
             embedding = embed_text(build_embedding_source(row["Review"], classification.key_phrase))
-            insert_review({
+            review_id = insert_review({
                 "review_date": row["Date"],
                 "rating": None if pd.isna(row["Rating"]) else int(row["Rating"]),
                 "review_text": row["Review"],
@@ -51,8 +52,8 @@ def classify_batch(payload: BatchClassifyRequest):
                 "category": classification.category.value,
                 "key_phrase": classification.key_phrase,
                 "source": "seeded",
-                "embedding": embedding,
             })
+            milvus_client.upsert_embedding(review_id, embedding)
             inserted += 1
         except Exception:
             failed += 1
@@ -77,7 +78,7 @@ def classify_single(payload: SingleReviewRequest):
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Classification service unavailable: {exc}")
 
-    insert_review({
+    review_id = insert_review({
         "review_date": date.today(),
         "rating": None,
         "review_text": text,
@@ -86,8 +87,8 @@ def classify_single(payload: SingleReviewRequest):
         "category": classification.category.value,
         "key_phrase": classification.key_phrase,
         "source": "live_input",
-        "embedding": embedding,
     })
+    milvus_client.upsert_embedding(review_id, embedding)
 
     return UserAckResponse(
         category=classification.category.value,
