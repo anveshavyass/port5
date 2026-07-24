@@ -113,6 +113,57 @@ def get_weekly_volume() -> list[dict]:
         return cur.fetchall()
 
 
+def get_category_counts_by_week() -> list[dict]:
+    """Category mix per week, for the 'which issues are rising/falling'
+    trend chart. Always spans the whole dataset, like get_weekly_volume."""
+    with get_cursor() as cur:
+        cur.execute(
+            """
+            SELECT date_trunc('week', review_date)::date AS week,
+                   category, COUNT(*) AS count
+            FROM reviews
+            WHERE review_date IS NOT NULL
+            GROUP BY week, category
+            ORDER BY week
+            """
+        )
+        return cur.fetchall()
+
+
+def get_sentiment_counts_by_week() -> list[dict]:
+    """Sentiment mix per week, for the sentiment trajectory chart. Always
+    spans the whole dataset, like get_weekly_volume."""
+    with get_cursor() as cur:
+        cur.execute(
+            """
+            SELECT date_trunc('week', review_date)::date AS week,
+                   sentiment, COUNT(*) AS count
+            FROM reviews
+            WHERE review_date IS NOT NULL
+            GROUP BY week, sentiment
+            ORDER BY week
+            """
+        )
+        return cur.fetchall()
+
+
+def get_rating_counts(week: str | None = None) -> list[dict]:
+    clause = "AND date_trunc('week', review_date)::date = %s" if week else ""
+    params = [week] if week else []
+    with get_cursor() as cur:
+        cur.execute(
+            f"""
+            SELECT rating, COUNT(*) AS count
+            FROM reviews
+            WHERE rating IS NOT NULL {clause}
+            GROUP BY rating
+            ORDER BY rating
+            """,
+            params,
+        )
+        return cur.fetchall()
+
+
 def get_rating_sentiment_agreement(week: str | None = None) -> list[dict]:
     """Cross-tab of star rating vs LLM-detected sentiment, for the
     'do ratings match the tone of the text' chart."""

@@ -7,8 +7,11 @@ import { Card, CardTitle } from "@/components/ui/card";
 import { ReviewForm } from "@/components/ReviewForm";
 import {
   CategoryBar,
+  CategoryTrend,
+  RatingDistribution,
   RatingSentimentAgreement,
   SentimentDonut,
+  SentimentTrend,
   TopThemes,
   UrgencyBreakdown,
   WeeklyVolumeTrend,
@@ -16,6 +19,7 @@ import {
 import { ReviewsTable } from "@/components/ReviewsTable";
 import { ChatPanel } from "@/components/ChatPanel";
 import { BackToHome } from "@/components/BackToHome";
+import { UploadReviews } from "@/components/UploadReviews";
 
 function KpiCard({ label, value }: { label: string; value: string }) {
   return (
@@ -52,6 +56,16 @@ export default function AdminPage() {
       })
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load dashboard data."));
   }, []);
+
+  async function refreshData() {
+    try {
+      const [a, r] = await Promise.all([getAggregates(), getReviews()]);
+      setAggregates(a);
+      setReviews(r);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to refresh dashboard data.");
+    }
+  }
 
   useEffect(() => {
     if (!selectedWeek) return;
@@ -114,6 +128,10 @@ export default function AdminPage() {
         <TopThemes data={aggregates.category_counts} />
       </div>
 
+      <RatingDistribution data={aggregates.rating_counts} />
+      <CategoryTrend data={aggregates.category_counts_by_week} />
+      <SentimentTrend data={aggregates.sentiment_counts_by_week} />
+
       <Card>
         <CardTitle>Overall Insight Summary</CardTitle>
         <p className="whitespace-pre-line text-sm leading-relaxed">{summary?.summary}</p>
@@ -143,7 +161,8 @@ export default function AdminPage() {
 
       <Card>
         <CardTitle>Try It Live</CardTitle>
-        <ReviewForm variant="admin" />
+        <ReviewForm variant="admin" onSuccess={refreshData} />
+        <UploadReviews onUploaded={refreshData} />
       </Card>
 
       <ReviewsTable reviews={reviews} />

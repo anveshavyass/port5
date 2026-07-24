@@ -1,13 +1,15 @@
+import io
+import json
 from datetime import date
 
 import pandas as pd
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, File, HTTPException, UploadFile
 from pydantic import BaseModel
 
 from db import milvus_client
 from db.queries import insert_review
 from pipeline.classify import classify_review
-from pipeline.clean import load_and_clean
+from pipeline.clean import clean_dataframe, load_and_clean
 from pipeline.embed import embed_text
 from pipeline.run_pipeline import build_embedding_source
 
@@ -27,17 +29,7 @@ class BatchClassifyRequest(BaseModel):
     csv_path: str
 
 
-@router.post("/classify")
-def classify_batch(payload: BatchClassifyRequest):
-    """Runs the same batch pipeline as `python pipeline/run_pipeline.py`,
-    over an arbitrary CSV path on the server, for re-running ingestion
-    from the admin UI instead of a terminal. Long-running -- intended for
-    small re-ingest batches, not the initial 120-row seed load."""
-    try:
-        df = load_and_clean(payload.csv_path)
-    except (FileNotFoundError, ValueError) as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
-
+def _ingest_dataframe(df: pd.DataFrame, source: str) -> dict:
     inserted, failed = 0, 0
     for _, row in df.iterrows():
         try:
@@ -51,7 +43,7 @@ def classify_batch(payload: BatchClassifyRequest):
                 "urgency": classification.urgency.value,
                 "category": classification.category.value,
                 "key_phrase": classification.key_phrase,
-                "source": "seeded",
+                "source": source,
             })
             milvus_client.upsert_embedding(review_id, embedding)
             inserted += 1
@@ -59,6 +51,41 @@ def classify_batch(payload: BatchClassifyRequest):
             failed += 1
 
     return {"inserted": inserted, "failed": failed, "total": len(df)}
+
+
+@router.post("/classify")
+def classify_batch(payload: BatchClassifyRequest):
+    """Runs the same batch pipeline as `python pipeline/run_pipeline.py`,
+    over an arbitrary CSV path on the server, for re-running ingestion
+    from the admin UI instead of a terminal. Long-running -- intended for
+    small re-ingest batches, not the initial 120-row seed load."""
+    try:
+        df = load_and_clean(payload.csv_path)
+    except (FileNotFoundError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    return _ingest_dataframe(df, source="seeded")
+
+
+@router.post("/classify/upload")
+async def classify_upload(file: UploadFile = File(...)):
+    """Same batch pipeline as /classify, but for a file the admin uploads
+    directly from the browser (CSV or JSON, columns/keys: Date, Rating,
+    Review) instead of a path on the server's filesystem."""
+    filename = (file.filename or "").lower()
+    raw = await file.read()
+
+    try:
+        if filename.endswith(".csv"):
+            df = clean_dataframe(pd.read_csv(io.BytesIO(raw)))
+        elif filename.endswith(".json"):
+            df = clean_dataframe(pd.DataFrame(json.loads(raw)))
+        else:
+            raise HTTPException(status_code=400, detail="Only .csv and .json files are supported.")
+    except (ValueError, json.JSONDecodeError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    return _ingest_dataframe(df, source="uploaded")
 
 
 @router.post("/classify/single", response_model=UserAckResponse)

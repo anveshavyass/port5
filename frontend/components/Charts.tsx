@@ -1,6 +1,8 @@
 "use client";
 
 import {
+  Area,
+  AreaChart,
   Bar,
   BarChart,
   CartesianGrid,
@@ -32,6 +34,30 @@ const URGENCY_COLORS: Record<string, string> = {
 };
 
 const CATEGORY_COLOR = "#4f46e5";
+
+// Fixed categorical order + validated palette (dataviz skill, palette.md).
+// Slots are assigned in this order and never cycled/reused for other charts.
+const CATEGORY_ORDER = [
+  "General Praise",
+  "Delivery Experience",
+  "Customer Support",
+  "App & Ordering",
+  "Payments & Refunds",
+  "Pricing & Fees",
+  "Food Quality",
+  "Account & Onboarding",
+];
+
+const CATEGORY_TREND_COLORS: Record<string, string> = {
+  "General Praise": "#2a78d6",
+  "Delivery Experience": "#eb6834",
+  "Customer Support": "#1baf7a",
+  "App & Ordering": "#eda100",
+  "Payments & Refunds": "#e87ba4",
+  "Pricing & Fees": "#008300",
+  "Food Quality": "#4a3aa7",
+  "Account & Onboarding": "#e34948",
+};
 
 export function SentimentDonut({ data }: { data: Aggregates["sentiment_counts"] }) {
   return (
@@ -138,6 +164,104 @@ export function UrgencyBreakdown({ data }: { data: Aggregates["urgency_counts"] 
               <Cell key={entry.urgency} fill={URGENCY_COLORS[entry.urgency] ?? "#94a3b8"} />
             ))}
           </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </Card>
+  );
+}
+
+export function CategoryTrend({ data }: { data: Aggregates["category_counts_by_week"] }) {
+  const byWeek = new Map<string, Record<string, number>>();
+  const seenCategories = new Set<string>();
+  for (const row of data) {
+    const entry = byWeek.get(row.week) ?? {};
+    entry[row.category] = row.count;
+    byWeek.set(row.week, entry);
+    seenCategories.add(row.category);
+  }
+  const categories = CATEGORY_ORDER.filter((c) => seenCategories.has(c));
+  const chartData = Array.from(byWeek.entries())
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+    .map(([week, counts]) => {
+      const filled: Record<string, number> = {};
+      for (const category of categories) filled[category] = counts[category] ?? 0;
+      return { week, ...filled };
+    });
+
+  return (
+    <Card>
+      <CardTitle>Category Trend (weekly)</CardTitle>
+      <ResponsiveContainer width="100%" height={260}>
+        <AreaChart data={chartData}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="week" tick={{ fontSize: 11 }} />
+          <YAxis allowDecimals={false} />
+          <Tooltip />
+          <Legend wrapperStyle={{ fontSize: 11 }} />
+          {categories.map((category) => (
+            <Area
+              key={category}
+              type="monotone"
+              dataKey={category}
+              stackId="cat"
+              stroke={CATEGORY_TREND_COLORS[category] ?? "#94a3b8"}
+              fill={CATEGORY_TREND_COLORS[category] ?? "#94a3b8"}
+              fillOpacity={0.75}
+            />
+          ))}
+        </AreaChart>
+      </ResponsiveContainer>
+    </Card>
+  );
+}
+
+export function SentimentTrend({ data }: { data: Aggregates["sentiment_counts_by_week"] }) {
+  const byWeek = new Map<string, Record<string, number>>();
+  for (const row of data) {
+    const entry = byWeek.get(row.week) ?? {};
+    entry[row.sentiment] = row.count;
+    byWeek.set(row.week, entry);
+  }
+  const chartData = Array.from(byWeek.entries())
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+    .map(([week, counts]) => ({
+      week,
+      positive: counts.positive ?? 0,
+      neutral: counts.neutral ?? 0,
+      negative: counts.negative ?? 0,
+    }));
+
+  return (
+    <Card>
+      <CardTitle>Sentiment Trend (weekly)</CardTitle>
+      <ResponsiveContainer width="100%" height={260}>
+        <AreaChart data={chartData}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="week" tick={{ fontSize: 11 }} />
+          <YAxis allowDecimals={false} />
+          <Tooltip />
+          <Legend wrapperStyle={{ fontSize: 11 }} />
+          <Area type="monotone" dataKey="positive" stackId="sent" stroke={SENTIMENT_COLORS.positive} fill={SENTIMENT_COLORS.positive} fillOpacity={0.75} />
+          <Area type="monotone" dataKey="neutral" stackId="sent" stroke={SENTIMENT_COLORS.neutral} fill={SENTIMENT_COLORS.neutral} fillOpacity={0.75} />
+          <Area type="monotone" dataKey="negative" stackId="sent" stroke={SENTIMENT_COLORS.negative} fill={SENTIMENT_COLORS.negative} fillOpacity={0.75} />
+        </AreaChart>
+      </ResponsiveContainer>
+    </Card>
+  );
+}
+
+export function RatingDistribution({ data }: { data: Aggregates["rating_counts"] }) {
+  const chartData = data.map((row) => ({ rating: `${row.rating}★`, count: row.count }));
+  return (
+    <Card>
+      <CardTitle>Rating Distribution</CardTitle>
+      <ResponsiveContainer width="100%" height={220}>
+        <BarChart data={chartData}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="rating" />
+          <YAxis allowDecimals={false} />
+          <Tooltip />
+          <Bar dataKey="count" fill={CATEGORY_COLOR} radius={[4, 4, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </Card>

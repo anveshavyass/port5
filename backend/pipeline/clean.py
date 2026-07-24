@@ -3,12 +3,11 @@ import pandas as pd
 REQUIRED_COLUMNS = ["Date", "Rating", "Review"]
 
 
-def load_and_clean(csv_path: str) -> pd.DataFrame:
+def clean_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     """Cleaning funnel: strip whitespace/HTML noise, drop empty or duplicate
     reviews, coerce types. Deliberately does NOT drop short/weird reviews
     (one-word, emoji-only, non-English) -- those are the relevance gate's
     job at classification time, not the cleaning step's."""
-    df = pd.read_csv(csv_path)
     missing = [c for c in REQUIRED_COLUMNS if c not in df.columns]
     if missing:
         raise ValueError(f"Dataset missing required columns: {missing}")
@@ -22,3 +21,7 @@ def load_and_clean(csv_path: str) -> pd.DataFrame:
     df["Rating"] = pd.to_numeric(df["Rating"], errors="coerce")
 
     return df.reset_index(drop=True)
+
+
+def load_and_clean(csv_path: str) -> pd.DataFrame:
+    return clean_dataframe(pd.read_csv(csv_path))

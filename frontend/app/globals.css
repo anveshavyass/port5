@@ -3,6 +3,55 @@
 @tailwind utilities;
 
 body {
-  background-color: theme(colors.background);
+  background-color: #fff7ed;
   color: theme(colors.foreground);
+}
+
+@keyframes float-up {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.85;
+  }
+  90% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: translateY(-115vh) rotate(25deg);
+    opacity: 0;
+  }
+}
+
+@keyframes marquee-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-float-up {
+  animation-name: float-up;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.animate-marquee {
+  animation-name: marquee-scroll;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-float-up,
+  .animate-marquee {
+    animation: none;
+  }
 }

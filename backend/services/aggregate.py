@@ -31,4 +31,7 @@ def build_aggregates(week: str | None = None) -> dict:
         "weekly_volume": queries.get_weekly_volume(),
         "rating_sentiment_agreement": queries.get_rating_sentiment_agreement(week=week),
         "top_themes": queries.get_top_key_phrases(limit=10, week=week),
+        "category_counts_by_week": queries.get_category_counts_by_week(),
+        "sentiment_counts_by_week": queries.get_sentiment_counts_by_week(),
+        "rating_counts": queries.get_rating_counts(week=week),
     }

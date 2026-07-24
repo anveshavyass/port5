@@ -31,12 +31,39 @@ export function classifySingle(review_text: string) {
   });
 }
 
+export type UploadResult = { inserted: number; failed: number; total: number };
+
+export async function uploadReviews(file: File): Promise<UploadResult> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE}/classify/upload`, {
+      method: "POST",
+      body: formData,
+    });
+  } catch {
+    throw new Error("Could not reach the PulseAI backend. Is it running?");
+  }
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.detail ?? `Request failed (${response.status})`);
+  }
+
+  return response.json();
+}
+
 export type CategoryCount = { category: string; count: number };
 export type SentimentCount = { sentiment: string; count: number };
 export type UrgencyCount = { urgency: string; count: number };
 export type WeeklyVolume = { week: string; count: number };
 export type RatingSentimentRow = { rating: number; sentiment: string; count: number };
 export type ThemeCount = { key_phrase: string; count: number };
+export type CategoryByWeek = { week: string; category: string; count: number };
+export type SentimentByWeek = { week: string; sentiment: string; count: number };
+export type RatingCount = { rating: number; count: number };
 
 export type Aggregates = {
   week: string | null;
@@ -50,6 +77,9 @@ export type Aggregates = {
   weekly_volume: WeeklyVolume[];
   rating_sentiment_agreement: RatingSentimentRow[];
   top_themes: ThemeCount[];
+  category_counts_by_week: CategoryByWeek[];
+  sentiment_counts_by_week: SentimentByWeek[];
+  rating_counts: RatingCount[];
 };
 
 export function getAggregates() {
